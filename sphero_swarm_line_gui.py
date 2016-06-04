@@ -177,6 +177,7 @@ class SpheroSwarmLineForm(QtGui.QWidget):
         else:
             self.ballMoving = True;
             print "ball moving"
+            print self.location[ballID]
             self.ballField.setAlpha(0)
 
         if not self.ballMoving:
