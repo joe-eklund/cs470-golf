@@ -206,8 +206,10 @@ class SpheroSwarmLineForm(QtGui.QWidget):
             twist.angular.z = 0
             self.cmdVelPub.publish(twist)
 
-        for i in range(0,len(msg.id)):
-            self.location[msg.id[i]] = (msg.pose[i].x, msg.pose[i].y)
+        self.location[ballID] = (msg.pose[ballIndex].x, msg.pose[ballIndex].y)
+        self.location[spheroID] = (msg.pose[spheroIndex].x, msg.pose[spheroIndex].y)
+        # for i in range(0,len(msg.id)):
+        #     self.location[msg.id[i]] = (msg.pose[i].x, msg.pose[i].y)
 
         # for key in self.location:
         #     self.location[key] = (-1,-1)
