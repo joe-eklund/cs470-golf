@@ -8,6 +8,8 @@ from multi_apriltags_tracker.msg import april_tag_pos
 STEP_LENGTH = 100
 FOLLOW_SPPED = 75
 RADIUS = 150
+BALL_ID = 20
+SPHERO_ID = 0
 
 class SpheroSwarmLineForm(QtGui.QWidget):
     
@@ -158,9 +160,9 @@ class SpheroSwarmLineForm(QtGui.QWidget):
 
         if not self.initialized: #still initializing
             return
-        spheroID = 0
+        spheroID = SPHERO_ID
         spheroIndex = 0
-        ballID = 20
+        ballID = BALL_ID
         ballIndex = 0
         for i in range(len(msg.id)):
             if msg.id[i] == ballID:
