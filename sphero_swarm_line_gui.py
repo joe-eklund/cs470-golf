@@ -5,7 +5,7 @@ from PyQt4 import QtGui, QtCore
 
 from sphero_swarm_node.msg import SpheroTwist, SpheroColor
 from multi_apriltags_tracker.msg import april_tag_pos
-STEP_LENGTH = 50
+STEP_LENGTH = 100
 FOLLOW_SPPED = 75
 RADIUS = 150
 
