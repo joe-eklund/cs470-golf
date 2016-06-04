@@ -17,6 +17,7 @@ class SpheroSwarmLineForm(QtGui.QWidget):
         self.sphero_dict = {}
         self.initUI()
         self.initialized = False
+        self.initialized = False
         '''The Sphero bluetooth controller maps string names to addresses, The camera maps num to locations numToSphero
         and spheroToNum are dictoinaries that will map back and forth'''
         self.numToSphero = {}
