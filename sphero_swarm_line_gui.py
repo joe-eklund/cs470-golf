@@ -172,9 +172,11 @@ class SpheroSwarmLineForm(QtGui.QWidget):
 
         if self.location[ballID] == (msg.pose[ballIndex].x, msg.pose[ballIndex].y):
             self.ballMoving = False;
+            print "ball not moving"
             self.ballField.setAlpha(100);
         else:
             self.ballMoving = True;
+            print "ball moving"
             self.ballField.setAlpha(0)
 
         if not self.ballMoving:
@@ -182,7 +184,9 @@ class SpheroSwarmLineForm(QtGui.QWidget):
             self.ballField.setY(msg.pose[ballIndex].y)
             self.ballField.setAlpha(100)
             deltaX = self.ballField.calcVelocity(msg.pose[spheroIndex])[0]
+            print deltaX
             deltaY = self.ballField.calcVelocity(msg.pose[spheroIndex])[1]
+            print deltaY
             twist = SpheroTwist()
             twist.linear.x = deltaX
             twist.linear.y = deltaY
