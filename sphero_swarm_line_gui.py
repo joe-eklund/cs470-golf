@@ -170,7 +170,7 @@ class SpheroSwarmLineForm(QtGui.QWidget):
             if msg.id[i] == spheroID:
                 spheroIndex = i
 
-        if self.location[ballID][0] - msg.pose[ballIndex][0] < 3 and self.location[ballID][1] - msg.pose[ballIndex][1] < 3:
+        if self.location[ballID][0] - msg.pose[ballIndex].x < 3 and self.location[ballID][1] - msg.pose[ballIndex].y < 3:
             self.ballMoving = False;
             print "ball not moving"
             self.ballField.setAlpha(100);
