@@ -185,9 +185,9 @@ class SpheroSwarmLineForm(QtGui.QWidget):
             self.ballField.setY(msg.pose[ballIndex].y)
             self.ballField.setAlpha(100)
             deltaX = self.ballField.calcVelocity(msg.pose[spheroIndex])[0]
-            print "Delta X: " + deltaX
+            print "Delta X: " + str(deltaX)
             deltaY = self.ballField.calcVelocity(msg.pose[spheroIndex])[1]
-            print "Delta Y: " + deltaY
+            print "Delta Y: " + str(deltaY)
             twist = SpheroTwist()
             twist.linear.x = deltaX
             twist.linear.y = deltaY
