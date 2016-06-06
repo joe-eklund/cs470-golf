@@ -10,7 +10,7 @@ FOLLOW_SPPED = 75
 RADIUS = 150
 BALL_ID = 9
 SPHERO_ID = 0
-GOAL_ID = 1
+GOAL_ID = 2
 phases = ['initial','setup','swing','rolling']
 
 class SpheroSwarmLineForm(QtGui.QWidget):
@@ -28,7 +28,7 @@ class SpheroSwarmLineForm(QtGui.QWidget):
         self.order = [] #used to keep a follow the leadrer order
         self.location = {} #dictionary that maps sphero id nums to last known location
         self.ballMoving = False
-        self.ballField = AttractiveField(20,-1,-1,0,0,10)
+        self.ballField = AttractiveField(BALL_ID,-1,-1,0,0,10)
         self.phase = "initial"
 
         rospy.init_node('sphero_swarm_line_gui', anonymous=True)
@@ -180,11 +180,14 @@ class SpheroSwarmLineForm(QtGui.QWidget):
         spheroIndex = 0
         ballID = BALL_ID
         ballIndex = 0
+        goalIndex = 0
         for i in range(len(msg.id)):
             if msg.id[i] == ballID:
                 ballIndex = i
             if msg.id[i] == spheroID:
                 spheroIndex = i
+            if msg.id[i] == GOAL_ID:
+                goalIndex = i
 
         if self.location[ballID][0] - msg.pose[ballIndex].x < 3 and self.location[ballID][1] - msg.pose[ballIndex].y < 3:
             self.ballMoving = False;
@@ -197,23 +200,46 @@ class SpheroSwarmLineForm(QtGui.QWidget):
             self.ballField.setAlpha(0)
 
         if not self.ballMoving:
-            self.ballField.setX(msg.pose[ballIndex].x)
-            self.ballField.setY(msg.pose[ballIndex].y)
-            self.ballField.setAlpha(100)
-            deltaX = self.ballField.calcVelocity(msg.pose[spheroIndex])[0]
-            print "Delta X: " + str(deltaX)
-            deltaY = self.ballField.calcVelocity(msg.pose[spheroIndex])[1]
-            print "Delta Y: " + str(deltaY)
-            twist = SpheroTwist()
-            twist.linear.x = deltaX
-            twist.linear.y = deltaY
-            twist.linear.z = 0
-            twist.angular.x = 0
-            twist.angular.y = 0
-            twist.angular.z = 0
-            selected_items = self.spheroListWidget.selectedItems();
-            twist.name = str(selected_items[0].text())
-            self.cmdVelPub.publish(twist)
+            if self.phase == 'setup':
+                goalPose = msg.pose[goalIndex]
+                ballPose = msg.pose[ballIndex]
+                distance = self.ballField.calculateDistance(goalPose[0],ballPose[0],goalPose[1],goalPose[1])
+                theta = self.ballField.calcTheta(goalPose)
+                deltaX = math.cos(theta)
+                deltaY = math.cos(theta)
+                multiplier = 1
+                swingPos = [msg.pose[spheroIndex].x + (multiplier * deltaX), msg.pose[spheroIndex].y + (multiplier * deltaY)]
+                SetupField = AttractiveField(-1,swingPos[0], swingPos[1],0,0,10)
+                deltaX = self.ballField.calcVelocity(msg.pose[spheroIndex])[0]
+                deltaY = self.ballField.calcVelocity(msg.pose[spheroIndex])[1]
+                twist = SpheroTwist()
+                twist.linear.x = deltaX
+                twist.linear.y = deltaY
+                twist.linear.z = 0
+                twist.angular.x = 0
+                twist.angular.y = 0
+                twist.angular.z = 0
+                selected_items = self.spheroListWidget.selectedItems();
+                twist.name = str(selected_items[0].text())
+                self.cmdVelPub.publish(twist)
+            elif self.phase == 'swing':
+                self.ballField.setX(msg.pose[ballIndex].x)
+                self.ballField.setY(msg.pose[ballIndex].y)
+                self.ballField.setAlpha(100)
+                deltaX = self.ballField.calcVelocity(msg.pose[spheroIndex])[0]
+                print "Delta X: " + str(deltaX)
+                deltaY = self.ballField.calcVelocity(msg.pose[spheroIndex])[1]
+                print "Delta Y: " + str(deltaY)
+                twist = SpheroTwist()
+                twist.linear.x = deltaX
+                twist.linear.y = deltaY
+                twist.linear.z = 0
+                twist.angular.x = 0
+                twist.angular.y = 0
+                twist.angular.z = 0
+                selected_items = self.spheroListWidget.selectedItems();
+                twist.name = str(selected_items[0].text())
+                self.cmdVelPub.publish(twist)
         else:
             twist = SpheroTwist()
             twist.linear.x = 0
@@ -252,6 +278,8 @@ class Field:
     def calculateDistance(self,x0,x1,y0,y1):
         distance = math.sqrt(math.pow(int(x0)-x1,2) + math.pow(int(y0)-y1,2))
         return distance
+    def calcTheta(self, msg):
+        theta = math.atan2(-self.ypos + int(msg.y),self.xpos - int(msg.x))
 
 class AttractiveField(Field):
     def calcVelocity(self, msg):
@@ -269,6 +297,7 @@ class AttractiveField(Field):
         self.ypos = y
     def setAlpha(self, alpha):
         self.alpha = alpha;
+
 
 
 
