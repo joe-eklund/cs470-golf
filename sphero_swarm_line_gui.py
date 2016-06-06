@@ -8,8 +8,8 @@ from multi_apriltags_tracker.msg import april_tag_pos
 STEP_LENGTH = 100
 FOLLOW_SPPED = 75
 RADIUS = 150
-BALL_ID = 20
-SPHERO_ID = 0
+BALL_ID = 17
+SPHERO_ID = 6
 
 class SpheroSwarmLineForm(QtGui.QWidget):
     
