@@ -8,9 +8,9 @@ from multi_apriltags_tracker.msg import april_tag_pos
 STEP_LENGTH = 100
 FOLLOW_SPPED = 75
 RADIUS = 150
-BALL_ID = 17
-SPHERO_ID = 6
-GOAL_ID = 0
+BALL_ID = 9
+SPHERO_ID = 0
+GOAL_ID = 1
 phases = ['initial','setup','swing','rolling']
 
 class SpheroSwarmLineForm(QtGui.QWidget):
@@ -163,19 +163,19 @@ class SpheroSwarmLineForm(QtGui.QWidget):
 
         if not self.initialized: #still initializing
             return
-        if self.phase == 'initial':
-            self.changePhase()
-            return;
-        if self.phase == 'setup':
-            return;
-        if self.phase == 'swing':
-            if self.ballMoving:
-                self.changePhase()
-                return;
-        if self.phase == 'rolling':
-            if not self.ballMoving:
-                self.changePhase()
-                return;
+        # if self.phase == 'initial':
+        #     self.changePhase()
+        #     return;
+        # if self.phase == 'setup':
+        #     return;
+        # if self.phase == 'swing':
+        #     if self.ballMoving:
+        #         self.changePhase()
+        #         return;
+        # if self.phase == 'rolling':
+        #     if not self.ballMoving:
+        #         self.changePhase()
+        #         return;
         spheroID = SPHERO_ID
         spheroIndex = 0
         ballID = BALL_ID
