@@ -29,7 +29,7 @@ class SpheroSwarmLineForm(QtGui.QWidget):
         self.location = {} #dictionary that maps sphero id nums to last known location
         self.ballMoving = False
         self.ballField = AttractiveField(BALL_ID,-1,-1,0,0,10)
-        self.phase = "initial"
+        self.phase = "setup"
 
         rospy.init_node('sphero_swarm_line_gui', anonymous=True)
 
@@ -201,17 +201,23 @@ class SpheroSwarmLineForm(QtGui.QWidget):
 
         if not self.ballMoving:
             if self.phase == 'setup':
+                print "Setup phase"
                 goalPose = msg.pose[goalIndex]
                 ballPose = msg.pose[ballIndex]
-                distance = self.ballField.calculateDistance(goalPose[0],ballPose[0],goalPose[1],goalPose[1])
+                spheroPose = msg.pose[spheroIndex]
+                print "Sphero Position: " + str((spheroPose.x, spheroPose.y))
+                distance = self.ballField.calculateDistance(goalPose.x,ballPose.x,goalPose.y,goalPose.y)
                 theta = self.ballField.calcTheta(goalPose)
                 deltaX = math.cos(theta)
                 deltaY = math.cos(theta)
-                multiplier = 1
-                swingPos = [msg.pose[spheroIndex].x + (multiplier * deltaX), msg.pose[spheroIndex].y + (multiplier * deltaY)]
-                SetupField = AttractiveField(-1,swingPos[0], swingPos[1],0,0,10)
-                deltaX = self.ballField.calcVelocity(msg.pose[spheroIndex])[0]
-                deltaY = self.ballField.calcVelocity(msg.pose[spheroIndex])[1]
+                multiplier = 100
+                swingPos = [msg.pose[ballIndex].x + (multiplier * deltaX), msg.pose[ballIndex].y + (multiplier * deltaY)]
+                print "Swing Position: " + str(swingPos)
+                SetupField = AttractiveField(-1,swingPos[0], swingPos[1],50,0,10)
+                print "Setup Field Dist: " + str(SetupField.calculateDistance(SetupField.xpos, spheroPose.x, SetupField.ypos, spheroPose.y))
+                deltaX = SetupField.calcVelocity(msg.pose[spheroIndex])[0]
+                deltaY = SetupField.calcVelocity(msg.pose[spheroIndex])[1]
+                print "DeltaX & DeltaY: " + str((deltaX, deltaY))
                 twist = SpheroTwist()
                 twist.linear.x = deltaX
                 twist.linear.y = deltaY
@@ -223,6 +229,7 @@ class SpheroSwarmLineForm(QtGui.QWidget):
                 twist.name = str(selected_items[0].text())
                 self.cmdVelPub.publish(twist)
             elif self.phase == 'swing':
+                print "Swing phase"
                 self.ballField.setX(msg.pose[ballIndex].x)
                 self.ballField.setY(msg.pose[ballIndex].y)
                 self.ballField.setAlpha(100)
@@ -279,7 +286,7 @@ class Field:
         distance = math.sqrt(math.pow(int(x0)-x1,2) + math.pow(int(y0)-y1,2))
         return distance
     def calcTheta(self, msg):
-        theta = math.atan2(-self.ypos + int(msg.y),self.xpos - int(msg.x))
+        return math.atan2(-self.ypos + int(msg.y),self.xpos - int(msg.x))
 
 class AttractiveField(Field):
     def calcVelocity(self, msg):
