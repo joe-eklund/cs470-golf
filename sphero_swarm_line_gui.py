@@ -195,6 +195,8 @@ class SpheroSwarmLineForm(QtGui.QWidget):
             twist.angular.x = 0
             twist.angular.y = 0
             twist.angular.z = 0
+            selected_items = self.spheroListWidget.selectedItems();
+            twist.name = str(selected_items[0].text())
             self.cmdVelPub.publish(twist)
         else:
             twist = SpheroTwist()
@@ -204,6 +206,8 @@ class SpheroSwarmLineForm(QtGui.QWidget):
             twist.angular.x = 0
             twist.angular.y = 0
             twist.angular.z = 0
+            selected_items = self.spheroListWidget.selectedItems();
+            twist.name = str(selected_items[0].text())
             self.cmdVelPub.publish(twist)
 
         self.location[ballID] = (msg.pose[ballIndex].x, msg.pose[ballIndex].y)
