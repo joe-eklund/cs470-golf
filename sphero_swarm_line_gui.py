@@ -10,6 +10,8 @@ FOLLOW_SPPED = 75
 RADIUS = 150
 BALL_ID = 17
 SPHERO_ID = 6
+GOAL_ID = 0
+phases = ['initial','setup','swing','rolling']
 
 class SpheroSwarmLineForm(QtGui.QWidget):
     
@@ -27,6 +29,7 @@ class SpheroSwarmLineForm(QtGui.QWidget):
         self.location = {} #dictionary that maps sphero id nums to last known location
         self.ballMoving = False
         self.ballField = AttractiveField(20,-1,-1,0,0,10)
+        self.phase = "initial"
 
         rospy.init_node('sphero_swarm_line_gui', anonymous=True)
 
@@ -160,6 +163,19 @@ class SpheroSwarmLineForm(QtGui.QWidget):
 
         if not self.initialized: #still initializing
             return
+        if self.phase == 'initial':
+            self.changePhase()
+            return;
+        if self.phase == 'setup':
+            return;
+        if self.phase == 'swing':
+            if self.ballMoving:
+                self.changePhase()
+                return;
+        if self.phase == 'rolling':
+            if not self.ballMoving:
+                self.changePhase()
+                return;
         spheroID = SPHERO_ID
         spheroIndex = 0
         ballID = BALL_ID
@@ -212,50 +228,17 @@ class SpheroSwarmLineForm(QtGui.QWidget):
 
         self.location[ballID] = (msg.pose[ballIndex].x, msg.pose[ballIndex].y)
         self.location[spheroID] = (msg.pose[spheroIndex].x, msg.pose[spheroIndex].y)
-        # for i in range(0,len(msg.id)):
-        #     self.location[msg.id[i]] = (msg.pose[i].x, msg.pose[i].y)
 
-        # for key in self.location:
-        #     self.location[key] = (-1,-1)
-        #
-
-        #
-        # for key in msg.id:
-        #     toHere = self.location[key]
-        #     if toHere[0] == -1:
-        #         continue
-        #     nextIndx = self.order.index(key) + 1
-        #     if nextIndx >= len(self.order):
-        #         continue
-        #     nextSpher = self.order[nextIndx]
-        #     fromHere = self.location[nextSpher]
-        #     if fromHere[0] == -1:
-        #         continue
-        #     diffX = toHere[0] - fromHere[0]
-        #     diffY = toHere[1] - fromHere[1]
-        #
-        #     distance = math.sqrt((diffX * diffX) + (diffY * diffY))
-        #     twist = SpheroTwist()
-        #     twist.name = self.numToSphero[nextSpher]
-        #     print distance
-        #     if distance < RADIUS:
-        #         twist.linear.x = 0;
-        #         twist.linear.y = 0;
-        #         twist.linear.z = 0
-        #         twist.angular.x = 0;
-        #         twist.angular.y = 0;
-        #         twist.angular.z = 0
-        #     else:
-        #         omega = math.atan2(diffY, diffX)
-        #         deltaX = FOLLOW_SPPED * math.cos(omega)
-        #         deltaY = -FOLLOW_SPPED * math.sin(omega)
-        #         twist.linear.x = deltaX
-        #         twist.linear.y = deltaY
-        #         twist.linear.z = 0
-        #         twist.angular.x = 0;
-        #         twist.angular.y = 0;
-        #         twist.angular.z = 0
-        #     self.cmdVelPub.publish(twist) # how to tell sphero to move. all fields in twist must be explicitly set.
+    #     Method to control program flow.  Initial -> Setup -> swing -> rolling -> setup -> ...
+    def changePhase(self):
+        if self.phase == 'initial':
+            self.phase = 'setup'
+        elif self.phase == 'setup':
+            self.phase = 'swing'
+        elif self.phase == 'swing':
+            self.phase = 'rolling'
+        elif self.phase == 'rolling':
+            self.phase = 'setup'
 
 class Field:
     def __init__(self,id, xpos, ypos, alpha, s, r):
