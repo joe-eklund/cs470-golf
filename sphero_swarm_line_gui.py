@@ -209,7 +209,7 @@ class SpheroSwarmLineForm(QtGui.QWidget):
                 distance = self.ballField.calculateDistance(goalPose.x,ballPose.x,goalPose.y,goalPose.y)
                 theta = self.ballField.calcTheta(goalPose)
                 deltaX = math.cos(theta)
-                deltaY = math.cos(theta)
+                deltaY = math.sin(theta)
                 multiplier = 100
                 swingPos = [msg.pose[ballIndex].x + (multiplier * deltaX), msg.pose[ballIndex].y + (multiplier * deltaY)]
                 print "Swing Position: " + str(swingPos)
