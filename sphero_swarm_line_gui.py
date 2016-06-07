@@ -1,6 +1,6 @@
 #!/usr/bin/python
 
-import sys, rospy, math
+import sys, rospy, math, time
 from PyQt4 import QtGui, QtCore
 
 from sphero_swarm_node.msg import SpheroTwist, SpheroColor
@@ -8,9 +8,9 @@ from multi_apriltags_tracker.msg import april_tag_pos
 STEP_LENGTH = 100
 FOLLOW_SPPED = 75
 RADIUS = 150
-BALL_ID = 9
-SPHERO_ID = 0
-GOAL_ID = 2
+BALL_ID = 5
+SPHERO_ID = 1
+GOAL_ID = 32
 phases = ['initial','setup','swing','rolling']
 
 class SpheroSwarmLineForm(QtGui.QWidget):
@@ -189,16 +189,22 @@ class SpheroSwarmLineForm(QtGui.QWidget):
             if msg.id[i] == GOAL_ID:
                 goalIndex = i
 
+        # set the ballfield location
+        self.ballField.setX(msg.pose[ballIndex].x)
+        self.ballField.setY(msg.pose[ballIndex].y)
+
+	# detect ball moving
         if self.location[ballID][0] - msg.pose[ballIndex].x < 3 and self.location[ballID][1] - msg.pose[ballIndex].y < 3:
             self.ballMoving = False;
             print "ball not moving"
-            self.ballField.setAlpha(100);
+            # self.ballField.setAlpha(100);
         else:
             self.ballMoving = True;
             print "ball moving"
             print self.location[ballID]
             self.ballField.setAlpha(0)
 
+	# setup or swing when ball not moving
         if not self.ballMoving:
             if self.phase == 'setup':
                 print "Setup phase"
@@ -208,12 +214,18 @@ class SpheroSwarmLineForm(QtGui.QWidget):
                 print "Sphero Position: " + str((spheroPose.x, spheroPose.y))
                 distance = self.ballField.calculateDistance(goalPose.x,ballPose.x,goalPose.y,goalPose.y)
                 theta = self.ballField.calcTheta(goalPose)
+		print "Theta: " + str(theta)
                 deltaX = math.cos(theta)
-                deltaY = math.sin(theta)
+                deltaY = -math.sin(theta)
                 multiplier = 100
+                print "OffsetX & OffsetY: " + str((multiplier * deltaX, multiplier * deltaY))
                 swingPos = [msg.pose[ballIndex].x + (multiplier * deltaX), msg.pose[ballIndex].y + (multiplier * deltaY)]
                 print "Swing Position: " + str(swingPos)
-                SetupField = AttractiveField(-1,swingPos[0], swingPos[1],50,0,10)
+                SetupField = AttractiveField(-1,swingPos[0], swingPos[1],110,0,5)
+                setupFieldDist = SetupField.calculateDistance(SetupField.xpos, spheroPose.x, SetupField.ypos, spheroPose.y)
+                if(setupFieldDist < 5):
+                    self.changePhase()
+                    return
                 print "Setup Field Dist: " + str(SetupField.calculateDistance(SetupField.xpos, spheroPose.x, SetupField.ypos, spheroPose.y))
                 deltaX = SetupField.calcVelocity(msg.pose[spheroIndex])[0]
                 deltaY = SetupField.calcVelocity(msg.pose[spheroIndex])[1]
@@ -232,7 +244,7 @@ class SpheroSwarmLineForm(QtGui.QWidget):
                 print "Swing phase"
                 self.ballField.setX(msg.pose[ballIndex].x)
                 self.ballField.setY(msg.pose[ballIndex].y)
-                self.ballField.setAlpha(100)
+                self.ballField.setAlpha(40)
                 deltaX = self.ballField.calcVelocity(msg.pose[spheroIndex])[0]
                 print "Delta X: " + str(deltaX)
                 deltaY = self.ballField.calcVelocity(msg.pose[spheroIndex])[1]
@@ -264,6 +276,7 @@ class SpheroSwarmLineForm(QtGui.QWidget):
 
     #     Method to control program flow.  Initial -> Setup -> swing -> rolling -> setup -> ...
     def changePhase(self):
+        time.sleep(1)
         if self.phase == 'initial':
             self.phase = 'setup'
         elif self.phase == 'setup':
@@ -283,16 +296,16 @@ class Field:
         self.r = r
 
     def calculateDistance(self,x0,x1,y0,y1):
-        distance = math.sqrt(math.pow(int(x0)-x1,2) + math.pow(int(y0)-y1,2))
+        distance = math.sqrt(math.pow(x0-x1,2) + math.pow(y0-y1,2))
         return distance
     def calcTheta(self, msg):
-        return math.atan2(-self.ypos + int(msg.y),self.xpos - int(msg.x))
+        return math.atan2(-self.ypos + msg.y,self.xpos - msg.x)
 
 class AttractiveField(Field):
     def calcVelocity(self, msg):
         result = [0,0]
-        distance = self.calculateDistance(int(msg.x), self.xpos, int(msg.y), self.ypos)
-        theta = math.atan2(-self.ypos + int(msg.y),self.xpos - int(msg.x))
+        distance = self.calculateDistance(msg.x, self.xpos, msg.y, self.ypos)
+        theta = math.atan2(-self.ypos + msg.y,self.xpos - msg.x)
         if distance < self.r:
             return result
         result[0] = (self.alpha * math.cos(theta))
