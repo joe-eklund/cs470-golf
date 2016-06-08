@@ -30,6 +30,7 @@ class SpheroSwarmLineForm(QtGui.QWidget):
         self.ballMoving = False
         self.ballField = AttractiveField(BALL_ID,-1,-1,0,0,10)
         self.phase = "setup"
+        self.rotateFrames = 0
 
         rospy.init_node('sphero_swarm_line_gui', anonymous=True)
 
@@ -249,6 +250,11 @@ class SpheroSwarmLineForm(QtGui.QWidget):
                 print "Delta X: " + str(deltaX)
                 deltaY = self.ballField.calcVelocity(msg.pose[spheroIndex])[1]
                 print "Delta Y: " + str(deltaY)
+                # Normalize vector to only rotate the sphero for 40 frames
+                if self.rotateFrames < 40:
+                    deltaX /= math.sqrt(math.pow(deltaX, 2) + math.pow(deltaY, 2))
+                    deltaY /= math.sqrt(math.pow(deltaX, 2) + math.pow(deltaY, 2))
+                    self.rotateFrames += 1
                 twist = SpheroTwist()
                 twist.linear.x = deltaX
                 twist.linear.y = deltaY
@@ -276,6 +282,7 @@ class SpheroSwarmLineForm(QtGui.QWidget):
 
     #     Method to control program flow.  Initial -> Setup -> swing -> rolling -> setup -> ...
     def changePhase(self):
+        self.rotateFrames = 0
         time.sleep(1)
         if self.phase == 'initial':
             self.phase = 'setup'
