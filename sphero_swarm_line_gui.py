@@ -5,6 +5,9 @@ from PyQt4 import QtGui, QtCore
 
 from sphero_swarm_node.msg import SpheroTwist, SpheroColor
 from multi_apriltags_tracker.msg import april_tag_pos
+
+from RRT import Tree
+
 STEP_LENGTH = 100
 FOLLOW_SPPED = 75
 RADIUS = 150
@@ -29,9 +32,12 @@ class SpheroSwarmLineForm(QtGui.QWidget):
         self.location = {} #dictionary that maps sphero id nums to last known location
         self.ballMoving = False
         self.ballField = AttractiveField(BALL_ID,-1,-1,0,0,10)
-        self.phase = "setup"
+        self.phase = "initial"
         self.rotateFrames = 0
         self.reverseFrames = 0
+        self.obstacles = []
+        self.tree = Tree([])
+        self.nextPoint = (0,0)
 
         rospy.init_node('sphero_swarm_line_gui', anonymous=True)
 
@@ -186,11 +192,15 @@ class SpheroSwarmLineForm(QtGui.QWidget):
         for i in range(len(msg.id)):
             if msg.id[i] == ballID:
                 ballIndex = i
-            if msg.id[i] == spheroID:
+            elif msg.id[i] == spheroID:
                 spheroIndex = i
-            if msg.id[i] == GOAL_ID:
+            elif msg.id[i] == GOAL_ID:
                 goalIndex = i
+            else:
+                self.obstacles.append(msg.pose[i])
 
+        if self.phase == 'initial':
+            self.changePhase()
         # set the ballfield location
         self.ballField.setX(msg.pose[ballIndex].x)
         self.ballField.setY(msg.pose[ballIndex].y)
@@ -217,9 +227,10 @@ class SpheroSwarmLineForm(QtGui.QWidget):
                 goalPose = msg.pose[goalIndex]
                 ballPose = msg.pose[ballIndex]
                 spheroPose = msg.pose[spheroIndex]
+                self.nextPoint = self.tree.create(goalPose, ballPose)
                 #print "Sphero Position: " + str((spheroPose.x, spheroPose.y))
-                distance = self.ballField.calculateDistance(goalPose.x,ballPose.x,goalPose.y,goalPose.y)
-                theta = self.ballField.calcTheta(goalPose)
+                distance = self.ballField.calculateDistance(self.nextPoint[0],ballPose.x,self.nextPoint[1],goalPose.y)
+                theta = self.ballField.calcTheta(self.nextPoint)
 		#print "Theta: " + str(theta)
                 deltaX = math.cos(theta)
                 deltaY = -math.sin(theta)
@@ -278,8 +289,8 @@ class SpheroSwarmLineForm(QtGui.QWidget):
                 twist = SpheroTwist()
                 if self.reverseFrames < 10:
                     if self.reverseFrames < 1:
-			deltaX = -twist.linear.x
-			deltaY = -twist.linear.y
+			            deltaX = -twist.linear.x
+			            deltaY = -twist.linear.y
                     else:
                         deltaX = twist.linear.x
                         deltaY = twist.linear.y
@@ -326,6 +337,8 @@ class SpheroSwarmLineForm(QtGui.QWidget):
             self.phase = 'rolling'
         elif self.phase == 'rolling':
             self.phase = 'setup'
+            self.tree = Tree(self.obstacles)
+
 
 class Field:
     def __init__(self,id, xpos, ypos, alpha, s, r):
@@ -340,7 +353,7 @@ class Field:
         distance = math.sqrt(math.pow(x0-x1,2) + math.pow(y0-y1,2))
         return distance
     def calcTheta(self, msg):
-        return math.atan2(-self.ypos + msg.y,self.xpos - msg.x)
+        return math.atan2(-self.ypos + msg[1],self.xpos - msg[0])
 
 class AttractiveField(Field):
     def calcVelocity(self, msg):

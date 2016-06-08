@@ -5,14 +5,12 @@ import math
 
 class Tree:
 
-    def __init__(self,obstacles):
+    def __init__(self,obstaclePos):
         self.vertices = []
         self.edges = []
-        self.obstacles = obstacles
-        self.root = Vertex(0,0)
-        self.path1 = Vertex(0,0)
-        self.path2 = Vertex(0,0)
-        self.path3 = Vertex(0,0)
+        self.obstacles = []
+        for o in obstaclePos:
+            self.obstacles.append(Obstacle(o))
     def create(self,goalPos,ballPos):
         goalVertex = Vertex(goalPos.x, goalPos.y)
         ballVertex = Vertex(ballPos.x, ballPos.y)
@@ -166,8 +164,8 @@ class Edge:
         return self.vertex1 == vertex or self.vertex2 == vertex
 
 class Obstacle:
-    def __init__(self,points):
-        self.points = points
+    def __init__(self,oPos):
+        self.position = oPos
     def contains(self, vertex):
         minX, maxX = self.min_maxX()
         minY, maxY = self.min_maxY()
@@ -175,24 +173,15 @@ class Obstacle:
             return True
         return False
     def min_maxX(self):
-        min = 900
-        max = 0
-        for point in self.points:
-            if point.x < min:
-                min = point.x
-            if point.x > max:
-                max = point.x
-        return min, max
+        min = self.position.x - 10
+        max = self.position.x + 10
+        return min,max
 
     def min_maxY(self):
-        min = 900
-        max = 0
-        for point in self.points:
-            if point.y < min:
-                min = point.y
-            if point.y > max:
-                max = point.y
+        min = self.position.y - 10
+        max = self.position.y + 10
         return min, max
+        min = 90
 
 if __name__ == '__main__':
     tree = Tree([])
