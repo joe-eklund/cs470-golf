@@ -283,7 +283,6 @@ class SpheroSwarmLineForm(QtGui.QWidget):
                     else:
                         deltaX = twist.linear.x
                         deltaY = twist.linear.y
-
                     self.reverseFrames += 1
                 else:
                     deltaX = 0
