@@ -201,14 +201,15 @@ class SpheroSwarmLineForm(QtGui.QWidget):
 
         if self.phase == 'initial':
             self.changePhase()
-        # set the ballfield location
-        self.ballField.setX(msg.pose[ballIndex].x)
-        self.ballField.setY(msg.pose[ballIndex].y)
+
 
 	# detect ball moving
         if self.location[ballID][0] - msg.pose[ballIndex].x < 3 and self.location[ballID][1] - msg.pose[ballIndex].y < 3:
             self.ballMoving = False;
             print "ball not moving"
+            # set the ballfield location
+            self.ballField.setX(msg.pose[ballIndex].x)
+            self.ballField.setY(msg.pose[ballIndex].y)
             if self.phase == 'rolling':
                 self.changePhase()
         else:
