@@ -31,6 +31,7 @@ class SpheroSwarmLineForm(QtGui.QWidget):
         self.ballField = AttractiveField(BALL_ID,-1,-1,0,0,10)
         self.phase = "setup"
         self.rotateFrames = 0
+        self.reverseFrames = 0
 
         rospy.init_node('sphero_swarm_line_gui', anonymous=True)
 
@@ -198,13 +199,17 @@ class SpheroSwarmLineForm(QtGui.QWidget):
         if self.location[ballID][0] - msg.pose[ballIndex].x < 3 and self.location[ballID][1] - msg.pose[ballIndex].y < 3:
             self.ballMoving = False;
             print "ball not moving"
-            # self.ballField.setAlpha(100);
+            if self.phase == 'rolling':
+                self.changePhase()
         else:
             self.ballMoving = True;
             print "ball moving"
             print self.location[ballID]
             self.ballField.setAlpha(0)
-
+            if self.phase == 'swing':
+                
+                self.changePhase()
+        
 	# setup or swing when ball not moving
         if not self.ballMoving:
             if self.phase == 'setup':
@@ -212,19 +217,19 @@ class SpheroSwarmLineForm(QtGui.QWidget):
                 goalPose = msg.pose[goalIndex]
                 ballPose = msg.pose[ballIndex]
                 spheroPose = msg.pose[spheroIndex]
-                print "Sphero Position: " + str((spheroPose.x, spheroPose.y))
+                #print "Sphero Position: " + str((spheroPose.x, spheroPose.y))
                 distance = self.ballField.calculateDistance(goalPose.x,ballPose.x,goalPose.y,goalPose.y)
                 theta = self.ballField.calcTheta(goalPose)
-		print "Theta: " + str(theta)
+		#print "Theta: " + str(theta)
                 deltaX = math.cos(theta)
                 deltaY = -math.sin(theta)
-                multiplier = 100
-                print "OffsetX & OffsetY: " + str((multiplier * deltaX, multiplier * deltaY))
+                multiplier = 160
+                #print "OffsetX & OffsetY: " + str((multiplier * deltaX, multiplier * deltaY))
                 swingPos = [msg.pose[ballIndex].x + (multiplier * deltaX), msg.pose[ballIndex].y + (multiplier * deltaY)]
                 print "Swing Position: " + str(swingPos)
-                SetupField = AttractiveField(-1,swingPos[0], swingPos[1],110,0,5)
+                SetupField = AttractiveField(-1,swingPos[0], swingPos[1],35,0,8)
                 setupFieldDist = SetupField.calculateDistance(SetupField.xpos, spheroPose.x, SetupField.ypos, spheroPose.y)
-                if(setupFieldDist < 5):
+                if(setupFieldDist < 8):
                     self.changePhase()
                     return
                 print "Setup Field Dist: " + str(SetupField.calculateDistance(SetupField.xpos, spheroPose.x, SetupField.ypos, spheroPose.y))
@@ -245,7 +250,7 @@ class SpheroSwarmLineForm(QtGui.QWidget):
                 print "Swing phase"
                 self.ballField.setX(msg.pose[ballIndex].x)
                 self.ballField.setY(msg.pose[ballIndex].y)
-                self.ballField.setAlpha(40)
+                self.ballField.setAlpha(100)
                 deltaX = self.ballField.calcVelocity(msg.pose[spheroIndex])[0]
                 print "Delta X: " + str(deltaX)
                 deltaY = self.ballField.calcVelocity(msg.pose[spheroIndex])[1]
@@ -265,8 +270,37 @@ class SpheroSwarmLineForm(QtGui.QWidget):
                 selected_items = self.spheroListWidget.selectedItems();
                 twist.name = str(selected_items[0].text())
                 self.cmdVelPub.publish(twist)
+
         else:
-            twist = SpheroTwist()
+            #Checks to stop the sphero from follow through when it strikes the ball
+            if self.phase == 'rolling':
+                print 'Rolling phase'
+                twist = SpheroTwist()
+                if self.reverseFrames < 10:
+                    if self.reverseFrames < 1:
+			deltaX = -twist.linear.x
+			deltaY = -twist.linear.y
+                    else:
+                        deltaX = twist.linear.x
+                        deltaY = twist.linear.y
+
+                    self.reverseFrames += 1
+                else:
+                    deltaX = 0
+                    deltaY = 0
+                #twist = SpheroTwist()
+                print 'Delta X: ' + str(deltaX)
+                print 'Delta Y: ' + str(deltaY)
+                twist.linear.x = deltaX
+                twist.linear.y = deltaY
+                twist.linear.z = 0
+                twist.angular.x = 0
+                twist.angular.y = 0
+                twist.angular.z = 0
+                selected_items = self.spheroListWidget.selectedItems();
+                twist.name = str(selected_items[0].text())
+                self.cmdVelPub.publish(twist)
+            '''twist = SpheroTwist()
             twist.linear.x = 0
             twist.linear.y = 0
             twist.linear.z = 0
@@ -275,7 +309,7 @@ class SpheroSwarmLineForm(QtGui.QWidget):
             twist.angular.z = 0
             selected_items = self.spheroListWidget.selectedItems();
             twist.name = str(selected_items[0].text())
-            self.cmdVelPub.publish(twist)
+            self.cmdVelPub.publish(twist)'''
 
         self.location[ballID] = (msg.pose[ballIndex].x, msg.pose[ballIndex].y)
         self.location[spheroID] = (msg.pose[spheroIndex].x, msg.pose[spheroIndex].y)
@@ -283,6 +317,7 @@ class SpheroSwarmLineForm(QtGui.QWidget):
     #     Method to control program flow.  Initial -> Setup -> swing -> rolling -> setup -> ...
     def changePhase(self):
         self.rotateFrames = 0
+        self.reverseFrames = 0
         time.sleep(1)
         if self.phase == 'initial':
             self.phase = 'setup'
